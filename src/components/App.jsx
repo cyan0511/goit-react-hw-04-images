@@ -14,7 +14,6 @@ function App () {
   const [searchQuery, setSearchQuery] = useState("");
   const [isError, setIsError] = useState(false);
   const [isEnd, setIsEnd] = useState(false);
-
   const endOfListRef = useRef();
 
   useEffect(() => {
@@ -28,7 +27,7 @@ function App () {
 
           setImages(prevState => currentPage === 1 ? hits : [...prevState, ...hits]);
           setIsLoading(false);
-          setIsEnd(images.length + hits.length >= totalHits);
+          setIsEnd(currentPage * 12 >= totalHits);
 
           if (hits.length === 0) {
             toast('No images found. Try a different search.');
