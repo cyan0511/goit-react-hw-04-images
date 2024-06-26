@@ -17,38 +17,33 @@ function App () {
 
   const endOfListRef = useRef();
 
-  const fetchImages = async () => {
-    setIsLoading(true);
-    setIsError(false);
-
-    try {
-      const response = await getAPI(searchQuery, currentPage);
-      const { totalHits, hits } = response;
-
-      setImages(prevState => currentPage === 1 ? hits : [...prevState, ...hits]);
-      setIsLoading(false);
-      setIsEnd(images.length + hits.length >= totalHits);
-
-      if (hits.length === 0) {
-        toast('No images found. Try a different search.');
-      }
-    } catch (error) {
-      setIsLoading(false);
-      setIsError(true);
-      toast.error(`An error occurred while fetching data: ${error}`);
-    }
-  };
-
   useEffect(() => {
     if (searchQuery === '') return;
     const fetchAndScroll = async () => {
-      await fetchImages();
+        setIsLoading(true);
+        setIsError(false);
+        try {
+          const response = await getAPI(searchQuery, currentPage);
+          const { totalHits, hits } = response;
+
+          setImages(prevState => currentPage === 1 ? hits : [...prevState, ...hits]);
+          setIsLoading(false);
+          setIsEnd(images.length + hits.length >= totalHits);
+
+          if (hits.length === 0) {
+            toast('No images found. Try a different search.');
+          }
+        } catch (error) {
+          setIsLoading(false);
+          setIsError(true);
+          toast.error(`An error occurred while fetching data: ${error}`);
+        }
+      };
       if (currentPage !== 1) {
         setTimeout(() => {
           endOfListRef.current?.scrollIntoView({ behavior: 'smooth' });
         }, 500);
       }
-    };
     void fetchAndScroll();
   }, [searchQuery, currentPage]); // Effect runs when searchQuery or currentPage changes
 
