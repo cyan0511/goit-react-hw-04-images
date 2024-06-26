@@ -1,9 +1,8 @@
-import React, { Component } from 'react';
+import React from 'react';
 import { TailSpin } from 'react-loader-spinner';
 import styles from './Loader.module.css';
 
-class Loader extends Component {
-  render() {
+const Loader = () => {
     return (
       <div className={styles.Loader}>
         <div className={styles.loaderBox}>
@@ -11,7 +10,5 @@ class Loader extends Component {
         </div>
       </div>
     );
-  }
 }
-
 export default Loader;

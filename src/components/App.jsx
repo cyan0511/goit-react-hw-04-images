@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import SearchBar from './Searchbar/Searchbar';
 import ImageGallery from './ImageGallery/ImageGallery';
 import Button from './Button/Button';
@@ -7,63 +7,54 @@ import { getAPI } from 'pixabay-api';
 import styles from './App.module.css';
 import toast, { Toaster } from 'react-hot-toast';
 
-class App extends Component {
-  state = {
-    images: [],
-    currentPage: 1,
-    searchQuery: '',
-    isLoading: false,
-    isError: false,
-    isEnd: false,
-  };
+function App () {
+  const [images, setImages ] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isError, setIsError] = useState(false);
+  const [isEnd, setIsEnd] = useState(false);
 
-  constructor(props) {
-    super(props);
-    this.endOfListRef = React.createRef();
-  }
+  const endOfListRef = useRef();
 
-  async componentDidUpdate(_prevProps, prevState) {
-    const { searchQuery, currentPage } = this.state;
-
-    if (
-      prevState.searchQuery !== searchQuery ||
-      prevState.currentPage !== currentPage
-    ) {
-      await this.fetchImages();
-      if (currentPage !== 1){
-        setTimeout(() =>
-        this.endOfListRef.current?.scrollIntoView({ behavior: 'smooth' }), 500);
-      }
-    }
-  }
-
-  fetchImages = async () => {
-    this.setState({ isLoading: true, isError: false });
-
-    const { searchQuery, currentPage } = this.state;
+  const fetchImages = async () => {
+    setIsLoading(true);
+    setIsError(false);
 
     try {
       const response = await getAPI(searchQuery, currentPage);
       const { totalHits, hits } = response;
 
-      this.setState(prevState => ({
-        images: currentPage === 1 ? hits : [...prevState.images, ...hits],
-        isLoading: false,
-        isEnd: prevState.images.length + hits.length >= totalHits,
-      }));
+      setImages(prevState => currentPage === 1 ? hits : [...prevState, ...hits]);
+      setIsLoading(false);
+      setIsEnd(images.length + hits.length >= totalHits);
 
       if (hits.length === 0) {
         toast('No images found. Try a different search.');
       }
     } catch (error) {
-      this.setState({ isLoading: false, isError: true });
+      setIsLoading(false);
+      setIsError(true);
       toast.error(`An error occurred while fetching data: ${error}`);
     }
   };
 
-  handleSearchSubmit = query => {
+  useEffect(() => {
+    if (searchQuery === '') return;
+    const fetchAndScroll = async () => {
+      await fetchImages();
+      if (currentPage !== 1) {
+        setTimeout(() => {
+          endOfListRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }, 500);
+      }
+    };
+    void fetchAndScroll();
+  }, [searchQuery, currentPage]); // Effect runs when searchQuery or currentPage changes
+
+  const handleSearchSubmit = query => {
     const normalizedQuery = query.trim().toLowerCase();
-    const normalizedCurrentQuery = this.state.searchQuery.toLowerCase();
+    const normalizedCurrentQuery = searchQuery.toLowerCase();
 
     if (normalizedQuery === '') {
       toast.error(`Empty string is not a valid search query. Please type again.`);
@@ -78,40 +69,35 @@ class App extends Component {
     }
 
     if (normalizedQuery !== normalizedCurrentQuery) {
-      this.setState({
-        searchQuery: normalizedQuery,
-        currentPage: 1,
-        images: [],
-        isEnd: false,
-      });
+      setSearchQuery( normalizedQuery);
+      setCurrentPage(1);
+      setImages([]);
+      setIsEnd(false);
     }
   };
 
-  handleLoadMore = () => {
-    if (!this.state.isEnd) {
-      this.setState(prevState => ({ currentPage: prevState.currentPage + 1 }));
+  const handleLoadMore = () => {
+    if (!isEnd) {
+      setCurrentPage(prevValue => prevValue + 1);
     } else {
       toast("You've reached the end of the search results.");
     }
   };
 
-  render() {
-    const { images, isLoading, isError, isEnd } = this.state;
     return (
       <div className={styles.App}>
         <div><Toaster position="top-right" /></div>
-        <SearchBar onSubmit={this.handleSearchSubmit} />
+        <SearchBar onSubmit={handleSearchSubmit} />
         <ImageGallery images={images} />
-        <div ref={this.endOfListRef}></div>
+        <div ref={endOfListRef}></div>
         {isLoading && <Loader />}
         {!isLoading && !isError && images.length > 0 && !isEnd && (
-          <Button onClick={this.handleLoadMore} />
+          <Button onClick={handleLoadMore} />
         )}
 
         {isError && <p>Something went wrong. Please try again later.</p>}
       </div>
     );
-  }
 }
 
 export default App;
